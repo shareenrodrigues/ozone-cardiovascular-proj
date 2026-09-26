@@ -51,6 +51,7 @@ The census tract, county, and total-population variables are retained to provide
 #| warning: false
 #| message: false
 #| echo: false
+#Load and clean CalEnviroScreen 4.0 data
 calEnvData <- read_excel(
   here(
     "data",
@@ -91,7 +92,7 @@ analysisData <- analysisData |>
 #| message: false
 #| echo: false
 #| tbl-cap: "Descriptive statistics for ozone and cardiovascular emergency department visit rates"
-
+#Summarize data
 descriptiveTable <- tibble(
   Variable = c(
     "Ozone concentration (ppm), 2017–2019",
@@ -141,7 +142,7 @@ Among the 8,024 census tracts included in the analysis, mean ozone concentration
 #| fig-cap: "Average ozone concentration during 2017–2019 and age-adjusted heart attack emergency department visit rates during 2015–2017 across California census tracts"
 #| fig-width: 8
 #| fig-height: 5
-
+#Plot for lm Fit
 ggplot(
   analysisData,
   aes(
@@ -179,7 +180,7 @@ Because ozone is measured in small decimal values, it was rescaled into incremen
 ```{r}
 #| label: rescale-ozone
 #| include: false
-
+#resclaing ozone to units of 0.01 ppm for interpretable slope
 analysisData <- analysisData |>
   mutate(ozone_01 = ozone / 0.01)
 ```
@@ -204,6 +205,7 @@ A significance level of $\alpha=0.05$ was used. A 95% confidence interval was al
 ```{r}
 #| label: fit-regression
 #| include: false
+#Fit simple linear regression of cardiovascular ED visits on ozone
 
 ozoneModel <- lm(
   cardiovascular_disease ~ ozone_01,
@@ -313,7 +315,7 @@ diagnosticData <- augment(ozoneModel)
 #| fig-cap: "Residuals versus fitted values for the ozone regression model"
 #| fig-width: 7.5
 #| fig-height: 4.5
-
+#Residuals versus fitted plot for the ozone regression model"
 ggplot(
   diagnosticData,
   aes(x = .fitted, y = .resid)
@@ -350,7 +352,7 @@ ggplot(
 #| fig-cap: "Normal Q-Q plot of standardized residuals from the ozone regression model"
 #| fig-width: 7.5
 #| fig-height: 5
-
+#Normal Q-Q plot of standardized residuals from the ozone regression model
 ggplot(
   diagnosticData,
   aes(sample = .std.resid)
@@ -399,6 +401,10 @@ Fourth, the diagnostic plots show mild nonlinearity, some nonconstant error vari
 A useful next step would be to fit a multiple linear regression model that adjusts for potential confounding variables. Adding appropriate covariates from the same dataset could help determine whether the association between ozone and heart attack emergency department visits remains after accounting for other tract-level characteristics. Future work could also use a spatial regression model or spatially adjusted standard errors to account for similarities among neighboring census tracts. The relationship could also be examined separately by county, geographic region, urbanization level, or socioeconomic conditions to determine whether the association differs across communities. Ideally, future data would measure ozone exposure and cardiovascular outcomes over the same years. Repeated annual measurements would allow researchers to examine whether changes in ozone within a census tract are associated with subsequent changes in cardiovascular visits.
 
 # References
+ R Core Team (2025). _R: A Language and Environment for Statistical Computing_. 
+  R Foundation for Statistical Computing, Vienna, Austria. 
+  <https://www.R-project.org/>
+  
 Centers for Disease Control and Prevention. (2024). *Heart disease facts*.
   U.S. Department of Health and Human Services. 
   https://www.cdc.gov/heart-disease/data-research/facts-stats/index.html
