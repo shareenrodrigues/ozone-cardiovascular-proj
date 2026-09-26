@@ -1,0 +1,417 @@
+---
+title: "The Association between Ozone Pollution and Cardiovascular Emergency Department Visits in California"
+author: "Shareen Rodrigues"
+#thanks: "Project repository available at: [https://github.com/peteragao/MATH261A-project-template](https://github.com/peteragao/MATH261A-project-template)."
+#date: today
+#date-format: long
+abstract: "Cardiovascular disease is a major public health burden, and air pollution is a potentially modifiable environmental risk factor that can be addressed through population-level policies. This study used CalEnviroScreen 4.0 data from 8,024 California census tracts with complete ozone and cardiovascular measurements. A simple linear regression model was used to examine the association between average daily maximum 8-hour ozone concentration and the age-adjusted rate of emergency department visits for heart attacks per 10,000 people. The model estimated that each 0.01 parts-per-million(ppm) increase in average ozone concentration was associated with an average increase of 1.68 heart attack emergency department visits per 10,000 people. This association was statistically significant $p<0.001$, but the model explained only 11.49% of the variation in cardiovascular visit rates $R^2=0.1149$. The results provide evidence of a positive association between ambient ozone concentration and heart attack emergency department visit rates across California census tracts. However, ozone concentration alone explains a limited proportion of the variation, and the observational, census-tract-level design does not permit a causal conclusion."
+format:
+  pdf:
+    include-in-header:
+      text: |
+        \usepackage{float}
+execute:
+  warning: false
+  message: false
+#bibliography: references.bib
+number-sections: true
+---
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# load libraries
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(here)
+library(broom)
+```
+
+# Introduction
+Cardiovascular disease is the leading cause of death in the United States, accounting for roughly 919,032 deaths annually (Centers for Disease Control and Prevention [CDC], 2024). While there are many risk factors such as high blood pressure, obesity, genetics, and others that increase the risk of cardiovascular diseases, it is important to study whether environmental factors are also responsible for increased cardiovascular disease risk. Unlike genetics or age, air pollution is a factor that can be addressed using policies that affect everyone in a geographic area regardless of individual behavior. One such factor is the ground-level ozone pollution. California's geography, climate, and traffic density make it one of the most ozone-burdened states in the country despite decades of regulation. 
+
+Ozone is a secondary pollutant formed when nitrogen oxides and volatile organic compounds react in sunlight.  Ozone inhalation causes oxidative stress, systemic inflammation, arterial stiffness. Prior research has found an association between ozone pollution and increased hospitalizations for cardiovascular disease (You et al., 2025). California is an important case study because its geography traps ozone, and despite California Air Resources Board (CARB) regulations being strictest in the world, many communities still exceed federal air quality standards.
+
+This study uses data from CalEnviroScreen 4.0, a dataset that provides environmental and population-health measurements for California census tracts. This study aims to answer the question: Among California census tracts, is average ambient ozone concentration associated with the age-adjusted rate of emergency department visits for heart attacks?
+
+To investigate this question, a simple linear regression model will be used to estimate the direction and magnitude of the association between ozone concentration and cardiovascular emergency department visit rates. Because these data are observational, the analysis can identify an association but cannot establish that higher ozone concentrations cause higher cardiovascular visit rates.
+
+@sec-data introduces the data used in this analysis... @sec-methods describes the model... 
+
+# Data {#sec-data}
+This study uses data from CalEnviroScreen 4.0 (Office of Environmental Health Hazard Assessment [OEHHA], 2021), which provides environmental and population-health measurements for California census tracts. The predictor variable is the average daily maximum 8-hour ozone concentration, measured in parts per million (ppm) during the summer months of May through October and averaged over 2017–2019. The response variable is the age-adjusted rate of emergency department visits for acute myocardial infarction, or heart attack, per 10,000 people, averaged over 2015–2017.
+
+The census tract, county, and total-population variables are retained to provide identifying and descriptive information about the observations. Before conducting the analysis, the two variables were examined for missing values. The ozone variable had no missing observations, while the cardiovascular disease variable had 11 missing observations. Observations missing either of the two measurements were removed because both values are required to fit the regression model. This left 8,024 complete census tracts for the analysis.
+
+```{r}
+#| label: data-load
+#| include: false
+#| warning: false
+#| message: false
+#| echo: false
+calEnvData <- read_excel(
+  here(
+    "data",
+    "calenviroscreen40resultsdatadictionary_F_2021.xlsx"
+  ),
+  sheet = "CES4.0FINAL_results"
+) |>
+  clean_names()
+
+
+analysisData <- calEnvData |>
+  select(
+    census_tract,
+    california_county,
+    total_population,
+    ozone,
+    cardiovascular_disease
+  )
+
+analysisData |>
+  summarise(
+    total_rows = n(),
+    missing_ozone = sum(is.na(ozone)),
+    missing_cardiovascular = sum(is.na(cardiovascular_disease))
+  )
+
+analysisData <- analysisData |>
+  drop_na(ozone, cardiovascular_disease)
+
+
+```
+
+ @tbl-descriptive-statistics summarizes the distributions of ozone concentration and cardiovascular emergency department visit rates.
+
+```{r}
+#| label: tbl-descriptive-statistics
+#| warning: false
+#| message: false
+#| echo: false
+#| tbl-cap: "Descriptive statistics for ozone and cardiovascular emergency department visit rates"
+
+descriptiveTable <- tibble(
+  Variable = c(
+    "Ozone concentration (ppm), 2017–2019",
+    "Heart attack ED visits per 10,000, 2015–2017"
+  ),
+  `Sample size` = c(
+    nrow(analysisData),
+    nrow(analysisData)
+  ),
+  Mean = c(
+    mean(analysisData$ozone),
+    mean(analysisData$cardiovascular_disease)
+  ),
+  `Standard deviation` = c(
+    sd(analysisData$ozone),
+    sd(analysisData$cardiovascular_disease)
+  ),
+  Minimum = c(
+    min(analysisData$ozone),
+    min(analysisData$cardiovascular_disease)
+  ),
+  Median = c(
+    median(analysisData$ozone),
+    median(analysisData$cardiovascular_disease)
+  ),
+  Maximum = c(
+    max(analysisData$ozone),
+    max(analysisData$cardiovascular_disease)
+  )
+)
+
+knitr::kable(
+  descriptiveTable,
+  digits = 4,
+  align = "lrrrrrr"
+)
+```
+
+Among the 8,024 census tracts included in the analysis, mean ozone concentration was 0.0487, with a standard deviation of 0.0105. Ozone concentrations ranged from 0.0266 to 0.0731, and the median was 0.0472. The mean cardiovascular emergency department visit rate was 13.4 visits per 10,000 people, with a standard deviation of 5.20. The rates ranged from 2.86 to 40.8 visits per 10,000 people, and the median was 12.4.
+
+
+  @fig-ozone-cardiovascular displays the relationship between ozone concentration and cardiovascular emergency department visit rates. Each point represents one California census tract and the red line is the fitted simple linear regression line.
+
+```{r}
+#| label: fig-ozone-cardiovascular
+#| echo: false
+#| fig-cap: "Average ozone concentration during 2017–2019 and age-adjusted heart attack emergency department visit rates during 2015–2017 across California census tracts"
+#| fig-width: 8
+#| fig-height: 5
+
+ggplot(
+  analysisData,
+  aes(
+    x = ozone,
+    y = cardiovascular_disease
+  )
+) +
+  geom_point(
+    alpha = 0.20,
+    color = "steelblue"
+  ) +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ x,
+    se = FALSE,
+    color = "darkred",
+    linewidth = 1
+  ) +
+  labs(
+  x = "Average daily maximum 8-hour ozone (ppm), 2017–2019",
+  y = "Heart attack ED visits per 10,000 people, 2015–2017"
+  )+
+  theme_minimal()
+```
+
+The scatterplot shows a positive but moderately weak linear association between ozone concentration and age-adjusted heart attack emergency department visit rates. Census tracts with higher average ozone concentrations generally tended to have higher visit rates. However, the observations are widely dispersed around the fitted regression line, indicating that ozone concentration alone does not explain most of the variation in cardiovascular emergency department visit rates. 
+
+The points form vertical stripes because many census tracts share the same reported ozone concentration. CalEnviroScreen estimates census-tract ozone concentrations using data from a limited network of air-monitoring stations, and tracts located more than 50 kilometers from a monitoring station are assigned the value from the nearest station. In addition, ozone values are reported to a limited number of decimal places. Consequently, multiple census tracts can have identical ozone values but different cardiovascular emergency department visit rates, causing their points to align vertically in the scatterplot.
+
+# Methods {#sec-methods}
+A simple linear regression model was used to examine the association between average ozone concentration and the age-adjusted rate of heart attack emergency department visits across California census tracts. 
+
+Because ozone is measured in small decimal values, it was rescaled into increments of 0.01 ppm. A one-unit increase in the scaled ozone therefore represents a 0.01-ppm increase in average ozone concentration. This rescaling makes the estimated slope easier to interpret.
+
+```{r}
+#| label: rescale-ozone
+#| include: false
+
+analysisData <- analysisData |>
+  mutate(ozone_01 = ozone / 0.01)
+```
+For census tract $i$, the regression model is
+$$
+Y_i = \beta_0 + \beta_1 X_i + \varepsilon_i,
+$$
+where:
+- $Y_i$ is the age-adjusted rate of heart attack emergency department visits per 10,000 people in census tract $i$;
+- $X_i$ is average ozone concentration measured in increments of 0.01 ppm;
+- $\beta_0$ is the expected heart attack emergency department visit rate when ozone concentration is zero. However, zero ppm is outside the observed ozone range of 0.0266 to 0.0731 ppm, so the intercept does not have a meaningful practical interpretation in this study;
+- $\beta_1$ is the expected difference in the visit rate associated with a 0.01-ppm increase in ozone; and
+- $\varepsilon_i$ represents variation in the visit rate not explained by ozone.
+
+The model was fitted using ordinary least squares. To determine whether ozone concentration has a statistically significant linear association with cardiovascular emergency department visit rates, the hypotheses were
+
+$$ H_0:\beta_1=0  \text{  and  } H_A:\beta_1\neq 0. $$
+
+A significance level of $\alpha=0.05$ was used. A 95% confidence interval was also calculated for the population slope. Model fit was evaluated using $R^2$. A Residuals vs. Fitted plot was examined to assess linearity and constant error variance, and a Normal Q-Q plot was examined to assess whether the residuals were approximately normally distributed. Independence cannot be established from these two diagnostic plots and may not be fully satisfied because nearby census tracts can share environmental, demographic, and healthcare characteristics. Consequently, the regression errors for geographically close tracts may be correlated. This possible spatial correlation is not accounted for by the simple linear regression model and should be considered a limitation of the analysis.
+
+
+```{r}
+#| label: fit-regression
+#| include: false
+
+ozoneModel <- lm(
+  cardiovascular_disease ~ ozone_01,
+  data = analysisData
+)
+```
+# Results {#sec-results}
+ @tbl-regression-coefficients presents the estimated regression coefficients and their 95% confidence intervals.
+```{r}
+#| label: tbl-regression-coefficients
+#| echo: false
+#| tbl-cap: "Estimated simple linear regression coefficients"
+
+regressionTable <- tidy(
+  ozoneModel,
+  conf.int = TRUE,
+  conf.level = 0.95
+) |>
+  mutate(
+    term = recode(
+      term,
+      `(Intercept)` = "Intercept",
+      ozone_01 = "Ozone increase of 0.01 ppm"
+    ),
+    estimate = round(estimate, 4),
+    std.error = round(std.error, 4),
+    statistic = round(statistic, 3),
+    p.value = format.pval(
+      p.value,
+      digits = 3,
+      eps = 0.001
+    ),
+    conf.low = round(conf.low, 4),
+    conf.high = round(conf.high, 4)
+  ) |>
+  select(
+    term,
+    estimate,
+    std.error,
+    statistic,
+    p.value,
+    conf.low,
+    conf.high
+  ) |>
+  rename(
+    Term = term,
+    Estimate = estimate,
+    `Standard error` = std.error,
+    `t statistic` = statistic,
+    `p-value` = p.value,
+    `95% CI lower` = conf.low,
+    `95% CI upper` = conf.high
+  )
+
+knitr::kable(
+  regressionTable,
+  align = "lrrrrrr"
+)
+```
+ @tbl-model-fit summarizes the overall fit of the model.
+```{r}
+#| label: tbl-model-fit
+#| echo: false
+#| tbl-cap: "Simple linear regression model fit statistics"
+
+modelFitTable <- glance(ozoneModel) |>
+  transmute(
+    `Sample size` = nobs,
+    `R-squared` = round(r.squared, 4),
+    `Adjusted R-squared` = round(adj.r.squared, 4),
+    `Residual standard error` = round(sigma, 4),
+    `F statistic` = round(statistic, 3),
+    `Model p-value` = format.pval(
+      p.value,
+      digits = 3,
+      eps = 0.001
+    )
+  )
+
+knitr::kable(
+  modelFitTable,
+  align = "rrrrrr"
+)
+```
+The estimated regression equation is
+$$
+\widehat{\text{Cardiovascular visit rate}} = 5.2281+1.6819(\text{Ozone in 0.01-ppm increments}).
+$$
+The estimated slope is 1.6819. Therefore, for every 0.01-ppm increase in average ozone concentration, the model expects an average increase of approximately 1.68 age-adjusted heart attack emergency department visits per 10,000 people. This represents an association between the variables and should not be interpreted as an actual effect.
+
+The 95% confidence interval for the slope is 1.5797 to 1.7841 visits per 10,000 people for each 0.01-ppm increase in ozone. Because this interval does not contain zero, the data provides evidence of a positive linear association between ozone concentration and heart attack emergency department visit rates. The hypothesis test produced $t=32.266$ and $p<0.001$. At the $\alpha=0.05$ significance level, the null hypothesis $H_0:\beta_1=0$ is rejected. There is statistically significant evidence that average ozone concentration is linearly associated with the age-adjusted heart attack emergency department visit rate among California census tracts.
+
+The intercept is 5.2281, which would represent the predicted visit rate when ozone concentration is zero. However, zero ppm is outside the observed ozone range of 0.0266 to 0.0731 ppm. Therefore, the intercept is an extrapolation and does not have a meaningful practical interpretation in this study. The model has $R^2=0.1149$, indicating that approximately 11.49% of the variation in heart attack emergency department visit rates across California census tracts is explained by their linear relationship with ozone concentration. The remaining 88.51% is not explained by this simple linear regression model and may reflect other variables, random variation, or relationships not captured by the model.
+
+The validity of the regression inference depends on several assumptions. A Residuals vs. Fitted plot was used to evaluate linearity and constant error variance, while a Normal Q-Q plot was used to evaluate the approximate normality of the residuals.
+```{r}
+#| label: create-diagnostics
+#| include: false
+
+diagnosticData <- augment(ozoneModel)
+```
+ @fig-residuals-fitted displays the residuals against the fitted values. If the linearity and constant-variance assumptions are reasonable, the residuals should be randomly scattered around zero with approximately equal vertical spread across the range of fitted values.
+```{r}
+#| label: fig-residuals-fitted
+#| echo: false
+#| fig-pos: "H"
+#| fig-cap: "Residuals versus fitted values for the ozone regression model"
+#| fig-width: 7.5
+#| fig-height: 4.5
+
+ggplot(
+  diagnosticData,
+  aes(x = .fitted, y = .resid)
+) +
+  geom_point(
+    alpha = 0.20,
+    color = "steelblue"
+  ) +
+  geom_hline(
+    yintercept = 0,
+    color = "gray40",
+    linetype = "dashed"
+  ) +
+  geom_smooth(
+    method = "loess",
+    formula = y ~ x,
+    se = FALSE,
+    color = "darkred",
+    linewidth = 1
+  ) +
+  labs(
+    x = "Fitted cardiovascular ED visit rate",
+    y = "Residual"
+  ) +
+  theme_minimal()
+```
+
+ @fig-normal-qq compares the standardized residuals with the quantiles expected under a normal distribution. If the normality assumption is reasonable, the points should fall approximately along the reference line.
+
+```{r}
+#| label: fig-normal-qq
+#| echo: false
+#| fig-pos: "H"
+#| fig-cap: "Normal Q-Q plot of standardized residuals from the ozone regression model"
+#| fig-width: 7.5
+#| fig-height: 5
+
+ggplot(
+  diagnosticData,
+  aes(sample = .std.resid)
+) +
+  stat_qq(
+    alpha = 0.25,
+    color = "steelblue"
+  ) +
+  stat_qq_line(
+    color = "darkred",
+    linewidth = 1
+  ) +
+  labs(
+    x = "Theoretical normal quantiles",
+    y = "Standardized residuals"
+  ) +
+  theme_minimal()
+```
+**Assessment of regression assumptions**
+
+**Linearity.**  @fig-residuals-fitted shows that the residuals are generally distributed around zero. However, the red LOESS curve displays a small wave-like pattern rather than remaining completely horizontal. The curve rises slightly, falls below zero near the middle of the fitted-value range, and then rises again. This suggests mild nonlinearity in the relationship between ozone concentration and cardiovascular emergency department visit rates. Therefore, the linearity assumption is only approximately satisfied.
+
+The residuals also form vertical bands because the fitted values are determined by ozone concentration and many census tracts share the same reported ozone value. Census tracts with the same ozone value consequently have the same fitted value but can have different residuals.
+
+**Constant variance.** The vertical spread of the residuals is not completely uniform across the fitted values. Some regions of the plot have greater variability, and several large positive residuals are visible, particularly among the middle and higher fitted values. This provides evidence of some nonconstant error variance, so the constant-variance assumption may not be fully satisfied.
+
+**Normality.** @fig-normal-qq shows a systematic departure from the reference line. The points are reasonably close to the line near the center but curve away from it in both tails. The departure is particularly noticeable in the upper tail, where several standardized residuals exceed 4. This pattern indicates a right-skewed residual distribution with unusually large positive residuals. Therefore, the normality assumption is not fully satisfied.
+
+**Independence.** Independence cannot be assessed using the Residuals vs. Fitted or Normal Q-Q plots. The observations represent geographically defined census tracts, and nearby tracts may share environmental conditions, population characteristics, and access to healthcare. Their regression errors may therefore be spatially correlated. Because the simple linear regression model does not account for possible spatial correlation, independence should be treated as a potential limitation.
+
+Overall, the diagnostic plots reveal mild nonlinearity, some evidence of nonconstant variance, and clear departures from normality in the tails. Possible spatial dependence is an additional limitation that cannot be assessed from these diagnostic plots.
+
+# Discussion {#sec-discussion}
+This study investigated whether average ambient ozone concentration is associated with the age-adjusted rate of heart attack emergency department visits across California census tracts. The results provide evidence of a positive association. For every 0.01-ppm increase in average ozone concentration, the model estimates an average increase of approximately 1.68 heart attack emergency department visits per 10,000 people. Although the association is statistically significant $p<0.001$, ozone concentration explains only approximately 11.49% of the variation in cardiovascular visit rates. Therefore, ozone is associated with the response, but most of the variation among census tracts remains unexplained by this simple model. 
+
+The large sample size of 8,024 census tracts must also be considered when interpreting the hypothesis test. With such a large sample, even a relatively modest association can produce a very small $p$-value. Therefore, statistical significance does not necessarily imply that the relationship is strong or practically important. The estimated slope, its confidence interval, and the model’s relatively low $R^2$ provide more information about the magnitude and explanatory strength of the association than the $p$-value alone.
+
+The analysis has several limitations. First, this is an observational study, so unmeasured confounding variables may help explain the observed association. Factors such as income, smoking prevalence, population demographics, healthcare access, urbanization, other air pollutants, and preexisting health conditions may be associated with both ozone exposure and cardiovascular outcomes.
+
+Second, this is an ecological analysis in which each observation represents an entire census tract. A tract-level association does not necessarily describe the relationship experienced by individual residents. Drawing an individual-level conclusion from an area-level association would constitute an ecological fallacy.
+
+Third, the two variables were measured over different periods. The ozone measurements were averaged over 2017–2019, while the cardiovascular emergency department visit rates were averaged over 2015–2017. Because the periods overlap only in 2017, the analysis does not directly match ozone exposure and health outcomes during the same complete time period.
+
+Fourth, the diagnostic plots show mild nonlinearity, some nonconstant error variance, and departures from normality in the residual tails. These patterns suggest that the simple linear regression model does not capture every feature of the relationship. Nearby census tracts may also share environmental, demographic, and healthcare characteristics, creating spatially correlated errors. The model does not account for this possible spatial dependence, so its standard errors, confidence intervals, and hypothesis tests should be interpreted cautiously.
+
+A useful next step would be to fit a multiple linear regression model that adjusts for potential confounding variables. Adding appropriate covariates from the same dataset could help determine whether the association between ozone and heart attack emergency department visits remains after accounting for other tract-level characteristics. Future work could also use a spatial regression model or spatially adjusted standard errors to account for similarities among neighboring census tracts. The relationship could also be examined separately by county, geographic region, urbanization level, or socioeconomic conditions to determine whether the association differs across communities. Ideally, future data would measure ozone exposure and cardiovascular outcomes over the same years. Repeated annual measurements would allow researchers to examine whether changes in ozone within a census tract are associated with subsequent changes in cardiovascular visits.
+
+# References
+Centers for Disease Control and Prevention. (2024). *Heart disease facts*.
+  U.S. Department of Health and Human Services. 
+  https://www.cdc.gov/heart-disease/data-research/facts-stats/index.html
+
+Office of Environmental Health Hazard Assessment (OEHHA). (2021). 
+  *CalEnviroScreen 4.0*. California Environmental Protection Agency. 
+  https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40
+
+R Core Team. (2024). *R: A language and environment for statistical computing* 
+  (Version 4.4.0). R Foundation for Statistical Computing. 
+  https://www.R-project.org/
+
+You, M., Li, X., Wang, X., & Wu, S. (2025). Acute effects of ozone exposure on 
+  cardiovascular disease hospitalizations and emergency department visits: A 
+  systematic review and meta-analysis. *Journal of the American Heart 
+  Association*, *14*(17), e037205. https://doi.org/10.1161/JAHA.124.037205
