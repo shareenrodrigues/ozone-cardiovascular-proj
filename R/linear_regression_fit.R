@@ -114,7 +114,7 @@ analysisData <- analysisData |>
 #linear model fit
 ozoneModel <- lm(
   cardiovascular_disease ~ ozone_01,
-  data = analysisComplete
+  data = analysisData
 )
 
 #Estimated simple linear regression coefficients
