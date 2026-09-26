@@ -38,7 +38,6 @@ This study uses data from CalEnviroScreen 4.0, a dataset that provides environme
 
 To investigate this question, a simple linear regression model will be used to estimate the direction and magnitude of the association between ozone concentration and cardiovascular emergency department visit rates. Because these data are observational, the analysis can identify an association but cannot establish that higher ozone concentrations cause higher cardiovascular visit rates.
 
-@sec-data introduces the data used in this analysis... @sec-methods describes the model... 
 
 # Data {#sec-data}
 This study uses data from CalEnviroScreen 4.0 (Office of Environmental Health Hazard Assessment [OEHHA], 2021), which provides environmental and population-health measurements for California census tracts. The predictor variable is the average daily maximum 8-hour ozone concentration, measured in parts per million (ppm) during the summer months of May through October and averaged over 2017–2019. The response variable is the age-adjusted rate of emergency department visits for acute myocardial infarction, or heart attack, per 10,000 people, averaged over 2015–2017.
