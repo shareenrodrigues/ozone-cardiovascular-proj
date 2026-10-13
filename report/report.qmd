@@ -13,7 +13,7 @@ format:
 execute:
   warning: false
   message: false
-#bibliography: references.bib
+bibliography: references.bib
 number-sections: true
 ---
 
@@ -30,9 +30,9 @@ library(broom)
 ```
 
 # Introduction
-Cardiovascular disease is the leading cause of death in the United States, accounting for roughly 919,032 deaths annually (Centers for Disease Control and Prevention [CDC], 2024). While there are many risk factors such as high blood pressure, obesity, genetics, and others that increase the risk of cardiovascular diseases, it is important to study whether environmental factors are also responsible for increased cardiovascular disease risk. Unlike genetics or age, air pollution is a factor that can be addressed using policies that affect everyone in a geographic area regardless of individual behavior. One such factor is the ground-level ozone pollution. California's geography, climate, and traffic density make it one of the most ozone-burdened states in the country despite decades of regulation. 
+Cardiovascular disease is the leading cause of death in the United States, accounting for roughly 919,032 deaths annually [@cdc2024]. While there are many risk factors such as high blood pressure, obesity, genetics, and others that increase the risk of cardiovascular diseases, it is important to study whether environmental factors are also responsible for increased cardiovascular disease risk. Unlike genetics or age, air pollution is a factor that can be addressed using policies that affect everyone in a geographic area regardless of individual behavior. One such factor is the ground-level ozone pollution. California's geography, climate, and traffic density make it one of the most ozone-burdened states in the country despite decades of regulation. 
 
-Ozone is a secondary pollutant formed when nitrogen oxides and volatile organic compounds react in sunlight.  Ozone inhalation causes oxidative stress, systemic inflammation, arterial stiffness. Prior research has found an association between ozone pollution and increased hospitalizations for cardiovascular disease (You et al., 2025). However, prior studies have primarily examined short-term exposures in hospital admission data rather than long-term average exposures at the census-tract level using environmental screening data. Hence, California is an important case study because its geography traps ozone, and despite California Air Resources Board (CARB) regulations being strictest in the world, many communities still exceed federal air quality standards.
+Ozone is a secondary pollutant formed when nitrogen oxides and volatile organic compounds react in sunlight.  Ozone inhalation causes oxidative stress, systemic inflammation, arterial stiffness. Prior research has found an association between ozone pollution and increased hospitalizations for cardiovascular disease [@you2025]. However, prior studies have primarily examined short-term exposures in hospital admission data rather than long-term average exposures at the census-tract level using environmental screening data. Hence, California is an important case study because its geography traps ozone, and despite California Air Resources Board (CARB) regulations being strictest in the world, many communities still exceed federal air quality standards.
 
 This study uses data from CalEnviroScreen 4.0, a dataset that provides environmental and population-health measurements for California census tracts. This study aims to answer the question: Among California census tracts, is average ambient ozone concentration associated with the age-adjusted rate of emergency department visits for heart attacks?
 
@@ -44,7 +44,7 @@ To investigate this question, a simple linear regression model will be used to e
 
 
 # Data {#sec-data}
-This study uses data from CalEnviroScreen 4.0 (Office of Environmental Health Hazard Assessment [OEHHA], 2021), which provides environmental and population-health measurements for California census tracts. The predictor variable is the average daily maximum 8-hour ozone concentration, measured in parts per million (ppm) during the summer months of May through October and averaged over 2017–2019. The response variable is the cardiovascular disease rate derived from California hospital emergency department discharge records for acute myocardial infarction, or heart attack, per 10,000 people, averaged over 2015–2017. It is age-adjusted using the direct standardization method to allow comparisons across census tracts with different age distributions. Age adjustment removes the confounding effect of age, since older populations naturally have higher heart attack rates regardless of ozone exposure.
+This study uses data from CalEnviroScreen 4.0 [@oehha2021], which provides environmental and population-health measurements for California census tracts. The predictor variable is the average daily maximum 8-hour ozone concentration, measured in parts per million (ppm) during the summer months of May through October and averaged over 2017–2019. The response variable is the cardiovascular disease rate derived from California hospital emergency department discharge records for acute myocardial infarction, or heart attack, per 10,000 people, averaged over 2015–2017. It is age-adjusted using the direct standardization method to allow comparisons across census tracts with different age distributions. Age adjustment removes the confounding effect of age, since older populations naturally have higher heart attack rates regardless of ozone exposure.
 
 The census tract, county, and total-population variables are retained to provide identifying and descriptive information about the observations. Before conducting the analysis, the two variables were examined for missing values. The ozone variable had no missing observations, while the cardiovascular disease variable had 11 missing observations. Observations missing either of the two measurements were removed because both values are required to fit the regression model. This left 8,024 complete census tracts for the analysis.
 
@@ -175,7 +175,7 @@ ggplot(
   theme_minimal()
 ```
 
-Alternative data sources could address some of these limitations. For ozone exposure, the U.S. Environmental Protection Agency’s Air Quality System provides daily monitor readings at higher temporal resolution than the seasonal averages used here, which could support analyses of acute rather than long-term exposure effects (U.S. Environmental Protection Agency [EPA], n.d.). For cardiovascular outcomes, individual-level hospital discharge records from the California Department of Health Care Access and Information would allow better analysis but might require data use permissions. (California Department of Health Care Access and Information [HCAI], n.d.).
+Alternative data sources could address some of these limitations. For ozone exposure, the U.S. Environmental Protection Agency’s Air Quality System provides daily monitor readings at higher temporal resolution than the seasonal averages used here, which could support analyses of acute rather than long-term exposure effects [@epa_ozone]. For cardiovascular outcomes, individual-level hospital discharge records from the California Department of Health Care Access and Information would allow better analysis but might require data use permissions [@hcai].
 
 # Methods {#sec-methods}
 A simple linear regression model was used to examine the association between average ozone concentration and the age-adjusted rate of heart attack emergency department visits across California census tracts. 
@@ -205,7 +205,7 @@ The model was fitted using ordinary least squares. To determine whether ozone co
 
 $$ H_0:\beta_1=0  \text{  and  } H_A:\beta_1\neq 0. $$
 
-A significance level of $\alpha=0.05$ was used. A 95% confidence interval was also calculated for the population slope. Model fit was evaluated using $R^2$. A Residuals vs. Fitted plot was examined to assess linearity and constant error variance, and a Normal Q-Q plot was examined to assess whether the residuals were approximately normally distributed. Independence cannot be established from these two diagnostic plots and may not be fully satisfied because nearby census tracts can share environmental, demographic, and healthcare characteristics. Consequently, the regression errors for geographically close tracts may be correlated. This possible spatial correlation is not accounted for by the simple linear regression model and should be considered a limitation of the analysis. All analyses were conducted in R version 4.5.2 (R Core Team, 2024)
+A significance level of $\alpha=0.05$ was used. A 95% confidence interval was also calculated for the population slope. Model fit was evaluated using $R^2$. A Residuals vs. Fitted plot was examined to assess linearity and constant error variance, and a Normal Q-Q plot was examined to assess whether the residuals were approximately normally distributed. Independence cannot be established from these two diagnostic plots and may not be fully satisfied because nearby census tracts can share environmental, demographic, and healthcare characteristics. Consequently, the regression errors for geographically close tracts may be correlated. This possible spatial correlation is not accounted for by the simple linear regression model and should be considered a limitation of the analysis. All analyses were conducted in R version 4.5.2 [@rcoreteam2024]
 
 
 ```{r}
@@ -407,26 +407,3 @@ Fourth, the diagnostic plots show mild nonlinearity, some nonconstant error vari
 A useful next step would be to fit a multiple linear regression model that adjusts for potential confounding variables. Adding appropriate covariates from the same dataset could help determine whether the association between ozone and heart attack emergency department visits remains after accounting for other tract-level characteristics. Future work could also use a spatial regression model or spatially adjusted standard errors to account for similarities among neighboring census tracts. The relationship could also be examined separately by county, geographic region, urbanization level, or socioeconomic conditions to determine whether the association differs across communities. Ideally, future data would measure ozone exposure and cardiovascular outcomes over the same years. Repeated annual measurements would allow researchers to examine whether changes in ozone within a census tract are associated with subsequent changes in cardiovascular visits.
 
 # References
-
-Centers for Disease Control and Prevention. (2024). *Heart disease facts*.
-  U.S. Department of Health and Human Services. 
-  <https://www.cdc.gov/heart-disease/data-research/facts-stats/index.html>
-
-You, M., Li, X., Wang, X., & Wu, S. (2025). Acute effects of ozone exposure on 
-  cardiovascular disease hospitalizations and emergency department visits: A 
-  systematic review and meta-analysis. *Journal of the American Heart 
-  Association*, *14*(17), e037205. <https://doi.org/10.1161/JAHA.124.037205>
-  
-Office of Environmental Health Hazard Assessment (OEHHA). (2021). 
-  *CalEnviroScreen 4.0*. California Environmental Protection Agency. 
-  <https://oehha.ca.gov/calenviroscreen/report/calenviroscreen-40>
-
-California Department of Health Care Access and Information. (n.d.). 
-  *Hospital and ambulatory surgery data*. <https://hcai.ca.gov/data/>
-
-U.S. Environmental Protection Agency. (n.d.). *Ozone watch*. 
-  <https://www.epa.gov/outdoor-air-quality-data/ozone-watch>
-  
-R Core Team. (2024). *R: A language and environment for statistical computing* 
-  (Version 4.4.0). R Foundation for Statistical Computing. 
-  <https://www.R-project.org/>
