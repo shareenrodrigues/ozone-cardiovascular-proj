@@ -44,7 +44,11 @@ To investigate this question, a simple linear regression model will be used to e
 
 
 # Data {#sec-data}
-This study uses data from CalEnviroScreen 4.0 [@oehha2021], which provides environmental and population-health measurements for California census tracts. The predictor variable is the average daily maximum 8-hour ozone concentration, measured in parts per million (ppm) during the summer months of May through October and averaged over 2017–2019. The response variable is the cardiovascular disease rate derived from California hospital emergency department discharge records for acute myocardial infarction, or heart attack, per 10,000 people, averaged over 2015–2017. It is age-adjusted using the direct standardization method to allow comparisons across census tracts with different age distributions. Age adjustment removes the confounding effect of age, since older populations naturally have higher heart attack rates regardless of ozone exposure.
+This study uses data from CalEnviroScreen 4.0 [@oehha2021], which provides environmental and population-health measurements for California census tracts. The predictor variable is the average daily maximum 8-hour ozone concentration, measured in parts per million (ppm) during the summer months of May through October and averaged over 2017–2019. The response variable is the cardiovascular disease rate derived from California hospital emergency department discharge records for acute myocardial infarction, or heart attack, per 10,000 people, averaged over 2015–2017.
+
+CalEnviroScreen dataset collects ozone values for census-tracts  by assigning each tract the reading from its nearest air quality monitoring station. Tracts more than 50 kilometers from a station receive that station’s value. Because California has a limited monitoring network, many tracts share identical ozone values, which means that these observations are not statistically independent of one another. This assignment method means the ozone predictor reflects station-level measurements rather than true tract-level variation, which reduces the precision of the estimated association and contributes to the discrete pattern of values visible in the scatterplot.
+
+The response variable is age-adjusted using the direct standardization method to allow comparisons across census tracts with different age distributions. Age adjustment removes the confounding effect of age, since older populations naturally have higher heart attack rates regardless of ozone exposure. Because the rate is derived from ED discharge records aggregated to the census-tract level, it reflects the average experience of tract residents rather than individual patient data. Any measurement error in coding diagnoses as acute myocardial infarction, or differences in ED utilization rates across tracts, could introduce noise into the response variable.
 
 The census tract, county, and total-population variables are retained to provide identifying and descriptive information about the observations. Before conducting the analysis, the two variables were examined for missing values. The ozone variable had no missing observations, while the cardiovascular disease variable had 11 missing observations. Observations missing either of the two measurements were removed because both values are required to fit the regression model. This left 8,024 complete census tracts for the analysis.
 
@@ -96,9 +100,10 @@ analysisData <- analysisData |>
 #| echo: false
 #| tbl-cap: "Descriptive statistics for ozone and cardiovascular emergency department visit rates"
 #Summarize data
+library(kableExtra)
 descriptiveTable <- tibble(
   Variable = c(
-    "Ozone concentration (ppm), 2017–2019",
+    "Ozone concentration(ppm), 2017–2019",
     "Heart attack ED visits per 10,000, 2015–2017"
   ),
   `Sample size` = c(
@@ -129,9 +134,13 @@ descriptiveTable <- tibble(
 
 knitr::kable(
   descriptiveTable,
+  col.names = c("Variable", "n", "Mean", "SD", "Min", "Median", "Max"),
+  align = "lrrrrrr",
   digits = 4,
-  align = "lrrrrrr"
-)
+  booktabs = TRUE
+) |>
+  column_spec(1, width = "5.5cm") |>
+  kable_styling(latex_options = "hold_position")
 ```
 
 Among the 8,024 census tracts included in the analysis, mean ozone concentration was 0.0487, with a standard deviation of 0.0105. Ozone concentrations ranged from 0.0266 to 0.0731, and the median was 0.0472. The mean cardiovascular emergency department visit rate was 13.4 visits per 10,000 people, with a standard deviation of 5.20. The rates ranged from 2.86 to 40.8 visits per 10,000 people, and the median was 12.4.
@@ -139,8 +148,6 @@ Among the 8,024 census tracts included in the analysis, mean ozone concentration
   @fig-ozone-cardiovascular displays the relationship between ozone concentration and cardiovascular emergency department visit rates. Each point represents one California census tract and the red line is the fitted simple linear regression line.
   
 The scatterplot shows a positive but moderately weak linear association between ozone concentration and age-adjusted heart attack emergency department visit rates. Census tracts with higher average ozone concentrations generally tended to have higher visit rates. However, the observations are widely dispersed around the fitted regression line, indicating that ozone concentration alone does not explain most of the variation in cardiovascular emergency department visit rates. 
-
-The points form vertical stripes because many census tracts share the same reported ozone concentration. CalEnviroScreen estimates census-tract ozone concentrations using data from a limited network of air-monitoring stations, and tracts located more than 50 kilometers from a monitoring station are assigned the value from the nearest station. In addition, ozone values are reported to a limited number of decimal places. Consequently, multiple census tracts can have identical ozone values but different cardiovascular emergency department visit rates, causing their points to align vertically in the scatterplot.
 
 ```{r}
 #| label: fig-ozone-cardiovascular
@@ -205,7 +212,11 @@ The model was fitted using ordinary least squares. To determine whether ozone co
 
 $$ H_0:\beta_1=0  \text{  and  } H_A:\beta_1\neq 0. $$
 
-A significance level of $\alpha=0.05$ was used. A 95% confidence interval was also calculated for the population slope. Model fit was evaluated using $R^2$. A Residuals vs. Fitted plot was examined to assess linearity and constant error variance, and a Normal Q-Q plot was examined to assess whether the residuals were approximately normally distributed. Independence cannot be established from these two diagnostic plots and may not be fully satisfied because nearby census tracts can share environmental, demographic, and healthcare characteristics. Consequently, the regression errors for geographically close tracts may be correlated. This possible spatial correlation is not accounted for by the simple linear regression model and should be considered a limitation of the analysis. All analyses were conducted in R version 4.5.2 [@rcoreteam2024]
+A significance level of $\alpha=0.05$ was used. A 95% confidence interval was also calculated for the population slope. Model fit was evaluated using $R^2$.
+
+The regression model relies on four assumptions. First, linearity: the relationship between ozone and cardiovascular ED visits must be linear on average. If this is violated, the estimated slope will be biased, meaning the reported slope per 0.01 ppm may not accurately reflect the true relationship. Second, constant variance (homoscedasticity): the spread of the errors should be roughly the same across all fitted values. If not, the standard errors and confidence intervals will be unreliable. Third, normality of errors: the errors should follow a normal distribution, which is required for the t-test and confidence interval to be valid. With a large sample, this assumption matters less because of the central limit theorem. Fourth, independence: the errors for different tracts should be unrelated to each other. Because this is geographic data, nearby tracts may have correlated errors (spatial autocorrelation), which would cause standard errors to be underestimated and make the results appear more significant than they are. This possible spatial correlation is not accounted for by the simple linear regression model and should be considered a limitation of the analysis.
+
+Linearity and constant variance were assessed using a Residuals vs. Fitted plot, and normality was assessed using a Normal Q-Q plot. Independence cannot be checked from these plots alone.  All analyses were conducted in R version 4.5.2 [@rcoreteam2024].
 
 
 ```{r}
@@ -234,7 +245,7 @@ regressionTable <- tidy(
     term = recode(
       term,
       `(Intercept)` = "Intercept",
-      ozone_01 = "Ozone increase of 0.01 ppm"
+      ozone_01 = "Ozone (per 0.01 ppm)"
     ),
     estimate = round(estimate, 4),
     std.error = round(std.error, 4),
@@ -250,7 +261,6 @@ regressionTable <- tidy(
   select(
     term,
     estimate,
-    std.error,
     statistic,
     p.value,
     conf.low,
@@ -259,7 +269,6 @@ regressionTable <- tidy(
   rename(
     Term = term,
     Estimate = estimate,
-    `Standard error` = std.error,
     `t statistic` = statistic,
     `p-value` = p.value,
     `95% CI lower` = conf.low,
@@ -271,31 +280,7 @@ knitr::kable(
   align = "lrrrrrr"
 )
 ```
- @tbl-model-fit summarizes the overall fit of the model.
-```{r}
-#| label: tbl-model-fit
-#| echo: false
-#| tbl-cap: "Simple linear regression model fit statistics"
 
-modelFitTable <- glance(ozoneModel) |>
-  transmute(
-    `Sample size` = nobs,
-    `R-squared` = round(r.squared, 4),
-    `Adjusted R-squared` = round(adj.r.squared, 4),
-    `Residual standard error` = round(sigma, 4),
-    `F statistic` = round(statistic, 3),
-    `Model p-value` = format.pval(
-      p.value,
-      digits = 3,
-      eps = 0.001
-    )
-  )
-
-knitr::kable(
-  modelFitTable,
-  align = "rrrrrr"
-)
-```
 The estimated regression equation is
 $$
 \widehat{\text{Cardiovascular visit rate}} = 5.2281+1.6819(\text{Ozone in 0.01-ppm increments}).
