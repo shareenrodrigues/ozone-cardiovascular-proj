@@ -106,10 +106,6 @@ descriptiveTable <- tibble(
     "Ozone concentration(ppm), 2017–2019",
     "Heart attack ED visits per 10,000, 2015–2017"
   ),
-  `Sample size` = c(
-    nrow(analysisData),
-    nrow(analysisData)
-  ),
   Mean = c(
     mean(analysisData$ozone),
     mean(analysisData$cardiovascular_disease)
@@ -134,7 +130,7 @@ descriptiveTable <- tibble(
 
 knitr::kable(
   descriptiveTable,
-  col.names = c("Variable", "n", "Mean", "SD", "Min", "Median", "Max"),
+  col.names = c("Variable", "Mean", "Std. Deviation", "Min.", "Median", "Max."),
   align = "lrrrrrr",
   digits = 4,
   booktabs = TRUE
